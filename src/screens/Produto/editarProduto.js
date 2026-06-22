@@ -1,25 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 
-import api, { logApiError } from '../../api/api';
-
-function getList(responseData) {
-  if (Array.isArray(responseData)) return responseData;
-  if (Array.isArray(responseData?.result)) return responseData.result;
-  if (Array.isArray(responseData?.Result)) return responseData.Result;
-  if (Array.isArray(responseData?.data)) return responseData.data;
-  return [];
-}
+import { endpoints, getList, logApiError } from '../../api/api';
 
 function getId(item) {
   return item?.Id ?? item?.id ?? item?.ProdutoId ?? item?.produtoId;
@@ -34,13 +19,7 @@ function getValor(item) {
 }
 
 function getProdutoCategoriaId(item) {
-  return (
-    item?.CategoriaId ??
-    item?.categoriaId ??
-    item?.IdCategoria ??
-    item?.idCategoria ??
-    item?.Categoria?.Id
-  );
+  return item?.CategoriaId ?? item?.categoriaId ?? item?.IdCategoria ?? item?.idCategoria ?? item?.Categoria?.Id;
 }
 
 function getProdutoCategoriaNome(item) {
@@ -80,23 +59,17 @@ export default function ProdutoScreenEditar() {
 
   useEffect(() => {
     if (categoriaId || !route.params || categorias.length === 0) return;
-
     const nomeCategoria = getProdutoCategoriaNome(route.params);
-    const categoria = categorias.find(
-      (cat) => getCategoriaNome(cat) === nomeCategoria
-    );
-
-    if (categoria) {
-      setCategoriaId(getCategoriaId(categoria));
-    }
+    const categoria = categorias.find((cat) => getCategoriaNome(cat) === nomeCategoria);
+    if (categoria) setCategoriaId(getCategoriaId(categoria));
   }, [categoriaId, categorias, route.params]);
 
   async function carregarCategorias() {
     try {
-      const response = await api.get('/categorias');
+      const response = await endpoints.categorias.listar();
       setCategorias(getList(response.data));
     } catch (error) {
-      logApiError('Carregar categorias do produto', error);
+      logApiError('Carregar categorias', error);
       Alert.alert('Erro', 'Nao foi possivel carregar as categorias.');
     }
   }
@@ -127,11 +100,7 @@ export default function ProdutoScreenEditar() {
 
     try {
       setSalvando(true);
-      await api.put(`/produtos/${idProduto}`, {
-        nome,
-        valor,
-        idCategoria: categoriaId,
-      });
+      await endpoints.produtos.editar(idProduto, { nome, valor, idCategoria: categoriaId });
       Alert.alert('Sucesso', 'Produto alterado.');
       navigation.goBack();
     } catch (error) {
@@ -174,99 +143,35 @@ export default function ProdutoScreenEditar() {
       />
 
       <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={categoriaId}
-          onValueChange={(itemValue) => setCategoriaId(itemValue)}
-          style={styles.picker}
-        >
+        <Picker selectedValue={categoriaId} onValueChange={(itemValue) => setCategoriaId(itemValue)} style={styles.picker}>
           <Picker.Item label="Selecione uma categoria" value={null} />
           {categorias.map((cat) => (
-            <Picker.Item
-              key={getCategoriaId(cat)}
-              label={getCategoriaNome(cat)}
-              value={getCategoriaId(cat)}
-            />
+            <Picker.Item key={getCategoriaId(cat)} label={getCategoriaNome(cat)} value={getCategoriaId(cat)} />
           ))}
         </Picker>
       </View>
 
-      <TouchableOpacity
-        style={[styles.button, styles.cancelButton]}
-        onPress={() => navigation.goBack()}
-        disabled={salvando}
-      >
+      <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()} disabled={salvando}>
         <Text style={styles.textButton}>Cancelar</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, styles.saveButton, salvando && styles.disabledButton]}
-        onPress={salvar}
-        disabled={salvando}
-      >
-        <Text style={[styles.textButton, { color: '#fff' }]}>
-          {salvando ? 'Salvando...' : 'Salvar'}
-        </Text>
+      <TouchableOpacity style={[styles.button, styles.saveButton, salvando && styles.disabledButton]} onPress={salvar} disabled={salvando}>
+        <Text style={[styles.textButton, { color: '#fff' }]}>{salvando ? 'Salvando...' : 'Salvar'}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  titulo: {
-    marginTop: 25,
-    marginBottom: 25,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 16,
-    width: '95%',
-    height: 50,
-  },
-  disabledInput: {
-    backgroundColor: '#F1F5F9',
-    color: '#64748B',
-  },
-  button: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginLeft: 8,
-    width: '95%',
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  cancelButton: {
-    backgroundColor: '#eee',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  pickerContainer: {
-    width: '95%',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  picker: {
-    height: 50,
-  },
-  textButton: {
-    fontSize: 16,
-  },
+  container: { flex: 1, backgroundColor: '#fff', alignItems: 'center' },
+  titulo: { marginTop: 25, marginBottom: 25, fontSize: 16, fontWeight: 'bold' },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 10, marginBottom: 16, width: '95%', height: 50 },
+  disabledInput: { backgroundColor: '#F1F5F9', color: '#64748B' },
+  button: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, marginLeft: 8, width: '95%', height: 48, alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  cancelButton: { backgroundColor: '#eee' },
+  saveButton: { backgroundColor: '#4CAF50' },
+  disabledButton: { opacity: 0.7 },
+  pickerContainer: { width: '95%', borderWidth: 1, borderColor: '#ddd', borderRadius: 12, marginBottom: 16 },
+  picker: { height: 50 },
+  textButton: { fontSize: 16 },
 });

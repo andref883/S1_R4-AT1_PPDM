@@ -10,15 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
-import api, { logApiError } from '../../api/api';
-
-function getList(responseData) {
-  if (Array.isArray(responseData)) return responseData;
-  if (Array.isArray(responseData?.result)) return responseData.result;
-  if (Array.isArray(responseData?.Result)) return responseData.Result;
-  if (Array.isArray(responseData?.data)) return responseData.data;
-  return [];
-}
+import { endpoints, getList, logApiError } from '../../api/api';
 
 function getId(item) {
   return item?.Id ?? item?.id ?? item?.CategoriaId ?? item?.categoriaId;
@@ -42,7 +34,7 @@ export default function CategoriaScreen() {
   async function loadData() {
     try {
       setLoading(true);
-      const response = await api.get('/categorias');
+      const response = await endpoints.categorias.listar();
       setCategorias(getList(response.data));
     } catch (error) {
       logApiError('Listar categorias', error);
@@ -65,15 +57,12 @@ export default function CategoriaScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await api.delete(`/categorias/${id}`);
+            await endpoints.categorias.deletar(id);
             await loadData();
             Alert.alert('Sucesso', 'Categoria excluida.');
           } catch (error) {
             logApiError('Excluir categoria', error);
-            Alert.alert(
-              'Erro',
-              'Nao foi possivel excluir. Verifique se existem produtos vinculados.'
-            );
+            Alert.alert('Erro', 'Nao foi possivel excluir. Verifique se existem produtos vinculados.');
           }
         },
       },
@@ -114,7 +103,6 @@ export default function CategoriaScreen() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.sideBar} />
-
             <View style={styles.conteudo}>
               <View style={styles.cardInner}>
                 <View style={styles.cardContent}>
@@ -122,7 +110,6 @@ export default function CategoriaScreen() {
                   <Text style={styles.title}>Categoria: {getNome(item)}</Text>
                 </View>
               </View>
-
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.iconButton, { backgroundColor: '#E3F2FD' }]}
@@ -130,7 +117,6 @@ export default function CategoriaScreen() {
                 >
                   <Text style={styles.iconText}>Editar</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={[styles.iconButton, { backgroundColor: '#FFEBEE' }]}
                   onPress={() => deletarCategoria(getId(item))}
@@ -147,86 +133,19 @@ export default function CategoriaScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  sideBar: {
-    width: 6,
-    backgroundColor: '#FF9800',
-  },
-  conteudo: {
-    flex: 1,
-    padding: 5,
-    flexDirection: 'column',
-  },
-  cardInner: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  titleScreen: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1E293B',
-  },
-  addButton: {
-    backgroundColor: '#4CAF50',
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 24,
-  },
-  card: {
-    flexDirection: 'row',
-    width: '95%',
-    backgroundColor: '#ffffff',
-    borderRadius: 6,
-    marginTop: 12,
-    marginHorizontal: 10,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  cardContent: {
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-  },
-  actions: {
-    flexDirection: 'row',
-  },
-  iconButton: {
-    flex: 1,
-    paddingVertical: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginEnd: 5,
-  },
-  iconText: {
-    fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 30,
-    color: '#64748B',
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  sideBar: { width: 6, backgroundColor: '#FF9800' },
+  conteudo: { flex: 1, padding: 5, flexDirection: 'column' },
+  cardInner: { flex: 1, padding: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 20 },
+  titleScreen: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
+  addButton: { backgroundColor: '#4CAF50', width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  addButtonText: { color: '#fff', fontWeight: '800', fontSize: 24 },
+  card: { flexDirection: 'row', width: '95%', backgroundColor: '#ffffff', borderRadius: 6, marginTop: 12, marginHorizontal: 10, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+  cardContent: { marginBottom: 12 },
+  title: { fontSize: 14, fontWeight: '600', color: '#333' },
+  actions: { flexDirection: 'row' },
+  iconButton: { flex: 1, paddingVertical: 12, justifyContent: 'center', alignItems: 'center', marginEnd: 5 },
+  iconText: { fontWeight: '600' },
+  emptyText: { textAlign: 'center', marginTop: 30, color: '#64748B' },
 });
